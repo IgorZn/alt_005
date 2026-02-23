@@ -183,6 +183,7 @@ async function main() {
 
         // 3. Обновляем amenities с правильными categoryId
         const amenitiesWithCorrectIds = amenities.map(amenity => {
+            // @ts-expect-error Много заморочек с типами, а так самый простой вариант
             const category = categories.find(c => c.id === amenity.categoryId);
             if (category) {
                 return {

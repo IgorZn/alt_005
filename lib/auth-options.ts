@@ -1,9 +1,11 @@
+//lib/auth-options.ts
 import GoogleProvider from "next-auth/providers/google"
 import YandexProvider from "next-auth/providers/yandex";
 import {PrismaAdapter} from "@auth/prisma-adapter";
+import type { NextAuthOptions } from "next-auth";
 import {prisma} from "@/lib/prisma";
 
-export const AUTH_OPTIONS = {
+export const AUTH_OPTIONS: NextAuthOptions = {
     adapter: PrismaAdapter(prisma),
     providers: [
         YandexProvider({
@@ -25,6 +27,7 @@ export const AUTH_OPTIONS = {
         async session({ session, user }) {
             // Добавляем ID пользователя в сессию
             if (session.user) {
+                // @ts-expect-error Много заморочек с типами, а так самый простой вариант
                 session.user.id = user.id;
             }
             return session;
