@@ -23,3 +23,26 @@ export type HouseDetailData = House & {
     })[];
     photos: Photo[];
 };
+
+export type HouseWithRelations = House & {
+    amenities: (HouseAmenity & {
+        amenity: Amenity & {
+            category: AmenityCategory;
+        };
+    })[];
+    photos: Photo[];
+};
+
+export interface PhotoWithDimensions {
+    id: number;
+    url: string;
+    width: number;
+    height: number;
+    isMain: boolean;
+}
+
+export type AmenitiesByCategory = Record<string, (HouseAmenity & {
+    amenity: Amenity & {
+        category: AmenityCategory;
+    };
+})[]>;

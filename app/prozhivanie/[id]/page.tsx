@@ -1,43 +1,98 @@
 // app/prozhivanie/[id]/page.tsx
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import {
-    Ruler, Users, BedDouble, Dog, ArrowLeft, Calendar,
+    Ruler, Users, Dog, ArrowLeft, Calendar,
     Phone, Mail, Tag, Home, Maximize2,
 } from 'lucide-react';
 import { getHouseById } from '@/actions/house-actions';
 import { amenityIconMap } from '@/lib/amenity-icons';
+import { Gallery, Item } from 'react-photoswipe-gallery';
+import 'photoswipe/dist/photoswipe.css';
+import { useEffect, useState } from 'react';
 
-interface HouseDetailPageProps {
-    params: Promise<{
-        id: string;
-    }>;
-}
+// Импортируем типы из Prisma
+import type { Photo } from '@/generated/prisma/client';
+import type { HouseWithRelations, PhotoWithDimensions, AmenitiesByCategory } from '@/types/house';
 
-export default async function HouseDetailPage({ params }: HouseDetailPageProps) {
-    const { id } = await params;
-    const houseId = parseInt(id);
+export default function HouseDetailPage() {
+    const params = useParams();
+    const [house, setHouse] = useState<HouseWithRelations | null>(null);
+    const [photosWithDimensions, setPhotosWithDimensions] = useState<PhotoWithDimensions[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    if (isNaN(houseId)) {
-        notFound();
+    useEffect(() => {
+        async function loadHouse() {
+            const id = params.id as string;
+            const houseId = parseInt(id);
+
+            if (isNaN(houseId)) {
+                notFound();
+            }
+
+            const houseData = await getHouseById(houseId);
+            if (!houseData) {
+                notFound();
+            }
+
+            setHouse(houseData as HouseWithRelations);
+
+            // Загружаем размеры изображений
+            const photosWithSizes = await Promise.all(
+                houseData.photos.map(async (photo: Photo) => {
+                    return new Promise<PhotoWithDimensions>((resolve) => {
+                        const img = document.createElement('img');
+                        img.onload = () => {
+                            resolve({
+                                id: photo.id,
+                                url: photo.url,
+                                width: img.width,
+                                height: img.height,
+                                isMain: photo.isMain,
+                            });
+                        };
+                        img.onerror = () => {
+                            // Если ошибка загрузки, ставим стандартные размеры
+                            resolve({
+                                id: photo.id,
+                                url: photo.url,
+                                width: 1920,
+                                height: 1080,
+                                isMain: photo.isMain,
+                            });
+                        };
+                        img.src = photo.url;
+                    });
+                })
+            );
+
+            setPhotosWithDimensions(photosWithSizes);
+            setLoading(false);
+        }
+
+        loadHouse();
+    }, [params.id]);
+
+    if (loading) {
+        return <LoadingSkeleton />;
     }
 
-    const house = await getHouseById(houseId);
-
-    if (!house) {
-        notFound();
+    if (!house || !photosWithDimensions.length) {
+        return notFound();
     }
 
     // Группировка удобств по категориям
-    const amenitiesByCategory = house.amenities.reduce((acc, ha) => {
+    const amenitiesByCategory = house.amenities.reduce<AmenitiesByCategory>((acc, ha) => {
         const categoryName = ha.amenity.category.name;
         if (!acc[categoryName]) {
             acc[categoryName] = [];
         }
         acc[categoryName].push(ha);
         return acc;
-    }, {} as Record<string, typeof house.amenities>);
+    }, {});
 
     return (
         <div className="w-full min-h-screen bg-white dark:bg-black">
@@ -61,9 +116,9 @@ export default async function HouseDetailPage({ params }: HouseDetailPageProps) 
                     </p>
                 )}
 
-                {/* Галерея */}
-                {house.photos.length > 0 && (
-                    <HouseGallery photos={house.photos} title={house.title} />
+                {/* Галерея с PhotoSwipe и оригинальными размерами */}
+                {photosWithDimensions.length > 0 && (
+                    <HouseGallery photos={photosWithDimensions} title={house.title} />
                 )}
 
                 {/* Основная информация */}
@@ -97,41 +152,150 @@ export default async function HouseDetailPage({ params }: HouseDetailPageProps) 
     );
 }
 
-// Компонент галереи
-function HouseGallery({ photos, title }: { photos: any[]; title: string }) {
-    const mainPhoto = photos.find(p => p.isMain) || photos[0];
-    const otherPhotos = photos.filter(p => p.id !== mainPhoto?.id);
-
+// Компонент загрузки
+function LoadingSkeleton() {
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2 relative h-[400px] lg:h-[500px] rounded-2xl overflow-hidden">
-                <Image
-                    src={mainPhoto.url}
-                    alt={title}
-                    fill
-                    className="object-cover"
-                    priority
-                />
-            </div>
-            <div className="grid grid-cols-3 lg:grid-cols-1 gap-4">
-                {otherPhotos.slice(0, 3).map((photo) => (
-                    <div key={photo.id} className="relative h-24 lg:h-32 rounded-lg overflow-hidden">
-                        <Image
-                            src={photo.url}
-                            alt={`${title} - фото`}
-                            fill
-                            className="object-cover"
-                        />
+        <div className="w-full min-h-screen bg-white dark:bg-black">
+            <div className="max-w-7xl mx-auto px-4 py-8">
+                <div className="h-8 w-48 bg-gray-200 dark:bg-gray-800 animate-pulse rounded mb-6" />
+                <div className="h-12 w-96 bg-gray-200 dark:bg-gray-800 animate-pulse rounded mb-2" />
+                <div className="h-8 w-64 bg-gray-200 dark:bg-gray-800 animate-pulse rounded mb-8" />
+
+                {/* Галерея скелетон */}
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[500px] mb-8">
+                    <div className="lg:col-span-3 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-2xl" />
+                    <div className="grid grid-cols-3 lg:grid-cols-1 gap-4">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="h-32 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
+                        ))}
                     </div>
-                ))}
+                </div>
             </div>
         </div>
     );
 }
 
+// Компонент галереи с PhotoSwipe и оригинальными размерами
+function HouseGallery({ photos, title }: { photos: PhotoWithDimensions[]; title: string }) {
+    const mainPhoto = photos.find(p => p.isMain) || photos[0];
+    const otherPhotos = photos.filter(p => p.id !== mainPhoto?.id);
+
+    return (
+        <Gallery>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                {/* Главное фото (занимает 3 колонки на десктопе) */}
+                <div className="lg:col-span-3 relative h-[400px] lg:h-[500px] rounded-2xl overflow-hidden group">
+                    <Item
+                        original={mainPhoto.url}
+                        thumbnail={mainPhoto.url}
+                        width={mainPhoto.width}
+                        height={mainPhoto.height}
+                        alt={title}
+                    >
+                        {({ ref, open }) => (
+                            <div
+                                ref={ref}
+                                onClick={open}
+                                className="relative w-full h-full cursor-pointer"
+                            >
+                                <Image
+                                    src={mainPhoto.url}
+                                    alt={title}
+                                    fill
+                                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                    priority
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+                                <div className="absolute bottom-4 right-4 bg-black/60 text-white text-sm px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                    Увеличить
+                                </div>
+                            </div>
+                        )}
+                    </Item>
+                </div>
+
+                {/* Сетка миниатюр */}
+                <div className="grid grid-cols-3 lg:grid-cols-1 gap-4">
+                    {otherPhotos.slice(0, 3).map((photo, index) => (
+                        <Item
+                            key={photo.id}
+                            original={photo.url}
+                            thumbnail={photo.url}
+                            width={photo.width}
+                            height={photo.height}
+                            alt={`${title} - фото ${index + 2}`}
+                        >
+                            {({ ref, open }) => (
+                                <div
+                                    ref={ref}
+                                    onClick={open}
+                                    className="relative h-24 lg:h-32 rounded-lg overflow-hidden cursor-pointer group"
+                                >
+                                    <Image
+                                        src={photo.url}
+                                        alt={`${title} - фото ${index + 2}`}
+                                        fill
+                                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                    />
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+                                </div>
+                            )}
+                        </Item>
+                    ))}
+
+                    {/* Если есть еще фото, показываем счетчик */}
+                    {otherPhotos.length > 3 && (
+                        <Item
+                            original={otherPhotos[3].url}
+                            thumbnail={otherPhotos[3].url}
+                            width={otherPhotos[3].width}
+                            height={otherPhotos[3].height}
+                            alt={`${title} - фото 4`}
+                        >
+                            {({ ref, open }) => (
+                                <div
+                                    ref={ref}
+                                    onClick={open}
+                                    className="relative h-24 lg:h-32 rounded-lg overflow-hidden cursor-pointer group"
+                                >
+                                    <Image
+                                        src={otherPhotos[3].url}
+                                        alt={`${title} - фото 4`}
+                                        fill
+                                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                    />
+                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center group-hover:bg-black/70 transition-colors">
+                                        <span className="text-white text-lg font-semibold">
+                                            +{otherPhotos.length - 3}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </Item>
+                    )}
+                </div>
+            </div>
+
+            {/* Скрытые элементы для остальных фото (для полноценной галереи) */}
+            {otherPhotos.slice(4).map((photo, index) => (
+                <Item
+                    key={photo.id}
+                    original={photo.url}
+                    thumbnail={photo.url}
+                    width={photo.width}
+                    height={photo.height}
+                    alt={`${title} - фото ${index + 5}`}
+                >
+                    {({ ref }) => <div ref={ref} className="hidden" />}
+                </Item>
+            ))}
+        </Gallery>
+    );
+}
+
 // Компонент характеристик
-function HouseSpecifications({ house }: { house: any }) {
-    const specs = [
+function HouseSpecifications({ house }: { house: HouseWithRelations }) {
+    const specs: Array<{ icon: React.ReactNode; label: string; value: string | number }> = [
         { icon: <Home className="w-5 h-5" />, label: 'Комнат', value: house.rooms },
         { icon: <Ruler className="w-5 h-5" />, label: 'Площадь', value: `${house.area} м²` },
         { icon: <Users className="w-5 h-5" />, label: 'Вместимость', value: `${house.capacity} чел.` },
@@ -152,7 +316,7 @@ function HouseSpecifications({ house }: { house: any }) {
 }
 
 // Компонент удобств по категориям
-function HouseAmenities({ amenitiesByCategory }: { amenitiesByCategory: Record<string, any[]> }) {
+function HouseAmenities({ amenitiesByCategory }: { amenitiesByCategory: AmenitiesByCategory }) {
     return (
         <div>
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
@@ -192,7 +356,7 @@ function HouseAmenities({ amenitiesByCategory }: { amenitiesByCategory: Record<s
 }
 
 // Компонент сайдбара с бронированием
-function HouseBookingSidebar({ house }: { house: any }) {
+function HouseBookingSidebar({ house }: { house: HouseWithRelations }) {
     return (
         <div className="lg:col-span-1">
             <div className="sticky top-8 bg-gray-50 dark:bg-gray-900 rounded-2xl p-6">
