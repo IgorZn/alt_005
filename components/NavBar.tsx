@@ -24,7 +24,7 @@ export default function NavBar() {
                 <div className="flex justify-between items-center h-20">
                     {/* Logo */}
                     <div className="flex-shrink-0">
-                        <Link href="/ru" className="block">
+                        <Link href="/" className="block">
                             <div className="relative h-14 w-36">
                                 <Image
                                     src="/logo.png" // Замените на путь к вашему логотипу
@@ -120,7 +120,7 @@ export default function NavBar() {
                         {/* Mobile booking button */}
                         <div className="pt-4">
                             <Link
-                                href="/ru/booking"
+                                href="/booking"
                                 className="block w-full bg-[#1E3A5F] text-white px-6 py-3 rounded-md text-lg font-semibold hover:bg-[#15304d] transition-colors text-center"
                                 onClick={() => setIsMobileMenuOpen(false)}
                             >
