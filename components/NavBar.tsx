@@ -7,12 +7,12 @@ import Image from 'next/image';
 import { Menu, X } from 'lucide-react';
 
 const navigationItems = [
-    { href: '/ru/prozhivanie', label: 'Проживание' },
-    { href: '/ru/uslugi', label: 'Услуги' },
-    { href: '/ru/chem-zanyatsya', label: 'Чем заняться?' },
-    { href: '/ru/restoran', label: 'Ресторан' },
-    { href: '/ru/istoriya', label: 'История' },
-    { href: '/ru/kontakty', label: 'Контакты' },
+    { href: '/prozhivanie', label: 'Проживание' },
+    { href: '/uslugi', label: 'Услуги' },
+    { href: '/chem-zanyatsya', label: 'Чем заняться?' },
+    { href: '/restoran', label: 'Ресторан' },
+    { href: '/istoriya', label: 'История' },
+    { href: '/contacts', label: 'Контакты' },
 ];
 
 export default function NavBar() {
@@ -51,18 +51,18 @@ export default function NavBar() {
 
                         {/* Language switcher */}
                         <div className="flex items-center space-x-2">
-                            <Link href="/ru" className="text-gray-400 hover:text-gray-600 text-lg">
-                                RU
-                            </Link>
-                            <span className="text-gray-300">|</span>
-                            <Link href="/en" className="text-gray-400 hover:text-gray-600 text-lg">
-                                EN
-                            </Link>
+                            {/*<Link href="/ru" className="text-gray-400 hover:text-gray-600 text-lg">*/}
+                            {/*    RU*/}
+                            {/*</Link>*/}
+                            {/*<span className="text-gray-300">|</span>*/}
+                            {/*<Link href="/en" className="text-gray-400 hover:text-gray-600 text-lg">*/}
+                            {/*    EN*/}
+                            {/*</Link>*/}
                         </div>
 
                         {/* Booking button */}
                         <Link
-                            href="/ru/booking"
+                            href="/booking"
                             className="bg-[#1E3A5F] text-white px-6 py-2.5 rounded-md text-sm font-semibold hover:bg-[#15304d] transition-colors"
                         >
                             ЗАБРОНИРОВАТЬ
@@ -100,21 +100,21 @@ export default function NavBar() {
 
                         {/* Mobile language switcher */}
                         <div className="flex items-center space-x-3 pt-2">
-                            <Link
-                                href="/en"
-                                className="text-gray-500 hover:text-gray-700 text-lg font-medium"
-                                onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                                English
-                            </Link>
-                            <span className="text-gray-300">|</span>
-                            <Link
-                                href="/fi"
-                                className="text-gray-500 hover:text-gray-700 text-lg font-medium"
-                                onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                                Suomi
-                            </Link>
+                            {/*<Link*/}
+                            {/*    href="/en"*/}
+                            {/*    className="text-gray-500 hover:text-gray-700 text-lg font-medium"*/}
+                            {/*    onClick={() => setIsMobileMenuOpen(false)}*/}
+                            {/*>*/}
+                            {/*    English*/}
+                            {/*</Link>*/}
+                            {/*<span className="text-gray-300">|</span>*/}
+                            {/*<Link*/}
+                            {/*    href="/fi"*/}
+                            {/*    className="text-gray-500 hover:text-gray-700 text-lg font-medium"*/}
+                            {/*    onClick={() => setIsMobileMenuOpen(false)}*/}
+                            {/*>*/}
+                            {/*    Suomi*/}
+                            {/*</Link>*/}
                         </div>
 
                         {/* Mobile booking button */}
