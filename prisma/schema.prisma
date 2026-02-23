@@ -1,0 +1,196 @@
+// prisma/schema.prisma
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Auth schema
+model User {
+  id            String          @id @default(cuid())
+  name          String?
+  email         String          @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  // Optional for WebAuthn support
+  Authenticator Authenticator[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// Optional for WebAuthn support
+model Authenticator {
+  credentialID         String  @unique
+  userId               String
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, credentialID])
+}
+
+// Project schema
+model House {
+  id             Int     @id @default(autoincrement())
+  title          String // "Студия 2+1"
+  subtitle       String? // "Осталось 2 студии"
+  description    String? // Текстовое описание
+  capacity       Int // Вместимость: 4
+  area           Int // Площадь: 32
+  rooms          Int // Комнат: 1
+  price          Int? // Базовая цена
+  petFee         Int? // Доплата за животных: 1000
+  maxPets        Int? // Макс. количество животных
+  smokingAllowed Boolean @default(false)
+
+  // Статус доступности
+  isAvailable Boolean @default(true) // Быстрое поле для проверки
+
+  // Связи
+  amenities HouseAmenity[]
+  photos    Photo[] // Для фотографий дома
+  bookings  Booking[] // Связь с бронированиями
+
+  @@map("houses")
+}
+
+model Booking {
+  id      Int   @id @default(autoincrement())
+  houseId Int
+  house   House @relation(fields: [houseId], references: [id])
+
+  // Даты бронирования
+  checkIn  DateTime
+  checkOut DateTime
+
+  // Информация о госте
+  guestName  String
+  guestPhone String?
+  guestEmail String?
+
+  // Детали брони
+  guestsCount Int           @default(1)
+  totalPrice  Int?
+  status      BookingStatus @default(PENDING)
+
+  // Метаданные
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([houseId, checkIn, checkOut])
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  PENDING // Ожидает подтверждения
+  CONFIRMED // Подтверждено
+  CANCELLED // Отменено
+  COMPLETED // Завершено
+}
+
+// Категории удобств (для группировки)
+model AmenityCategory {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique // "Ванная комната", "Электроника"
+  order Int     @default(0) // Для порядка отображения
+  icon  String? // Иконка для интерфейса
+
+  amenities Amenity[]
+
+  @@map("amenity_categories")
+}
+
+// Сами удобства
+model Amenity {
+  id          Int             @id @default(autoincrement())
+  name        String          @unique // "Душ", "Wi-Fi", "Телевизор со Smart TV"
+  description String? // Опциональное описание
+  categoryId  Int
+  category    AmenityCategory @relation(fields: [categoryId], references: [id])
+
+  houses HouseAmenity[]
+
+  @@map("amenities")
+}
+
+// Таблица-связка с дополнительными данными
+model HouseAmenity {
+  id          Int     @id @default(autoincrement())
+  houseId     Int
+  amenityId   Int
+  isAvailable Boolean @default(true) // Удобство доступно
+  extraInfo   String? // Доп. информация (например, "1000 ₽ с животного")
+
+  house   House   @relation(fields: [houseId], references: [id])
+  amenity Amenity @relation(fields: [amenityId], references: [id])
+
+  @@unique([houseId, amenityId])
+  @@map("house_amenities")
+}
+
+// Для фотографий дома (если нужно)
+model Photo {
+  id      Int     @id @default(autoincrement())
+  url     String
+  houseId Int
+  house   House   @relation(fields: [houseId], references: [id])
+  isMain  Boolean @default(false)
+
+  @@map("photos")
+}
