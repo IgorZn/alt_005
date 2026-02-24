@@ -2,9 +2,11 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { HouseWithAmenities, HouseCardData, HouseDetailData } from '@/types/house';
+import { HouseCardData, HouseDetailData } from '@/types/house';
 import { revalidatePath } from 'next/cache';
-import {House} from "@/generated/prisma/client";
+import { House } from "@/generated/prisma/client";
+import { rm } from 'fs/promises';
+import path from 'path';
 
 // Получить все дома для карточек
 export async function getHousesForCards(): Promise<HouseCardData[]> {
@@ -86,7 +88,7 @@ export async function getAllAmenities() {
     }
 }
 
-// CRUD операции для админки (если нужны)
+// CRUD операции для админки
 export async function createHouse(data: Omit<House, 'id'>) {
     try {
         const house = await prisma.house.create({
@@ -119,14 +121,68 @@ export async function updateHouse(id: number, data: Partial<House>) {
 
 export async function deleteHouse(id: number) {
     try {
-        await prisma.house.delete({
+        // Проверяем, существует ли дом
+        const house = await prisma.house.findUnique({
             where: { id },
+            include: {
+                bookings: true,
+                photos: true,
+                amenities: true,
+            },
         });
-        revalidatePath('/houses');
-        revalidatePath('/admin/houses');
+
+        if (!house) {
+            return { success: false, error: 'Дом не найден' };
+        }
+
+        // Если есть активные бронирования, не удаляем
+        const hasActiveBookings = house.bookings.some(
+            booking => booking.status === 'CONFIRMED' || booking.status === 'PENDING'
+        );
+
+        if (hasActiveBookings) {
+            return { success: false, error: 'Нельзя удалить дом с активными бронированиями' };
+        }
+
+        // Удаляем все связанные записи в транзакции
+        await prisma.$transaction(async (tx) => {
+            // Удаляем связи с удобствами
+            await tx.houseAmenity.deleteMany({
+                where: { houseId: id },
+            });
+
+            // Удаляем фотографии
+            await tx.photo.deleteMany({
+                where: { houseId: id },
+            });
+
+            // Удаляем бронирования
+            await tx.booking.deleteMany({
+                where: { houseId: id },
+            });
+
+            // Удаляем сам дом
+            await tx.house.delete({
+                where: { id },
+            });
+        });
+
+        // Удаляем физические файлы фотографий
+        try {
+            const folderNumber = id.toString().padStart(2, '0');
+            const folderPath = path.join(process.cwd(), 'public', 'gallery', 'houses', folderNumber);
+
+            await rm(folderPath, { recursive: true, force: true });
+        } catch (fsError) {
+            console.error('Error deleting photo files:', fsError);
+            // Не прерываем операцию, если не удалось удалить файлы
+        }
+
+        revalidatePath('/prozhivanie');
+        revalidatePath('/dashboard/houses');
         return { success: true };
     } catch (error) {
         console.error(`Error deleting house ${id}:`, error);
-        return { success: false, error: 'Failed to delete house' };
+        return { success: false, error: 'Ошибка при удалении дома' };
     }
 }

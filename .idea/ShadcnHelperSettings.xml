@@ -1590,6 +1590,18 @@
         <option name="homepage" value="https://pixelactui.com" />
         <option name="urlTemplate" value="https://pixelactui.com/r/{name}.json" />
       </RegistryConfigState>
+      <RegistryConfigState>
+        <option name="id" value="central-auth0" />
+        <option name="name" value="Auth0" />
+        <option name="namespace" value="@auth0" />
+        <option name="baseUrl" value="https://ui.auth0.com/r" />
+        <option name="stylePath" value="/{name}.json" />
+        <option name="type" value="community" />
+        <option name="enabled" value="false" />
+        <option name="description" value="Official Auth0 Universal Components for Web. Accelerate development with pre-built, embeddable UI for enterprise SSO, MFA, and organization management" />
+        <option name="homepage" value="https://auth0.com" />
+        <option name="urlTemplate" value="https://ui.auth0.com/r/{name}.json" />
+      </RegistryConfigState>
     </registryConfigs>
   </component>
 </project>
