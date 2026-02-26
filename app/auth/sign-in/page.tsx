@@ -1,11 +1,13 @@
 // app/auth/signin/page.tsx
 'use client';
 
+import { Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
-export default function SignInPage() {
+// Выносим логику с useSearchParams в отдельный компонент
+function SignInContent() {
     const searchParams = useSearchParams();
     const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
     const error = searchParams.get('error');
@@ -97,5 +99,18 @@ export default function SignInPage() {
                 </p>
             </div>
         </div>
+    );
+}
+
+// Основной компонент с Suspense
+export default function SignInPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-amber-500" />
+            </div>
+        }>
+            <SignInContent />
+        </Suspense>
     );
 }
