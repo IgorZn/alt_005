@@ -1,14 +1,16 @@
 // app/auth/error/page.tsx
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function AuthErrorPage() {
+// Компонент, который использует useSearchParams
+function ErrorContent() {
     const searchParams = useSearchParams();
     const error = searchParams.get('error');
 
-    const getErrorMessage = (error: string) => {
+    const getErrorMessage = (error: string | null) => {
         switch (error) {
             case 'AccessDenied':
                 return 'Доступ запрещен. Ваш email не в списке администраторов.';
@@ -35,16 +37,29 @@ export default function AuthErrorPage() {
                 </h2>
 
                 <p className="text-gray-600 dark:text-gray-400">
-                    {error ? getErrorMessage(error) : 'Неизвестная ошибка'}
+                    {getErrorMessage(error)}
                 </p>
 
                 <Link
-                    href="/auth/signin"
+                    href="/auth/sign-in"
                     className="inline-block px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors"
                 >
                     Вернуться ко входу
                 </Link>
             </div>
         </div>
+    );
+}
+
+// Основной компонент с Suspense
+export default function ErrorPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-amber-500" />
+            </div>
+        }>
+            <ErrorContent />
+        </Suspense>
     );
 }
