@@ -13,7 +13,7 @@ function ErrorContent() {
     const getErrorMessage = (error: string | null) => {
         switch (error) {
             case 'AccessDenied':
-                return 'Доступ запрещен. Ваш email не в списке администраторов.';
+                return 'Доступ запрещен.';
             case 'OAuthSignin':
                 return 'Ошибка при входе через провайдера.';
             case 'OAuthCallback':
