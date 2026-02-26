@@ -5,6 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Menu, X } from 'lucide-react';
+import SignInButton from "@/components/SignInButton";
 
 const navigationItems = [
     { href: '/prozhivanie', label: 'Проживание' },
@@ -29,6 +30,7 @@ export default function NavBar() {
                                 <Image
                                     src="/logo.png" // Замените на путь к вашему логотипу
                                     alt="Altai Paradise"
+                                    sizes="(max-width: 768px) 100vw, 33vw"
                                     fill
                                     className="object-contain"
                                     priority
@@ -67,6 +69,9 @@ export default function NavBar() {
                         >
                             ЗАБРОНИРОВАТЬ
                         </Link>
+
+                        {/* Sign in button */}
+                        <SignInButton />
                     </div>
 
                     {/* Mobile menu button */}

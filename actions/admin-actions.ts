@@ -1,6 +1,8 @@
 // actions/admin-actions.ts
 'use server';
 
+import { getServerSession } from 'next-auth';
+import { AUTH_OPTIONS } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -44,7 +46,7 @@ type HouseCreateData = Omit<House, 'id'>;
 // Получить все дома для админки
 export async function getAdminHouses() {
     try {
-        const houses = await prisma.house.findMany({
+        return prisma.house.findMany({
             include: {
                 photos: {
                     where: { isMain: true },
@@ -56,7 +58,6 @@ export async function getAdminHouses() {
             },
             orderBy: { id: 'asc' },
         });
-        return houses;
     } catch (error) {
         console.error('Error fetching admin houses:', error);
         return [];
@@ -66,7 +67,7 @@ export async function getAdminHouses() {
 // Получить дом для редактирования
 export async function getHouseForEdit(id: number) {
     try {
-        const house = await prisma.house.findUnique({
+        return prisma.house.findUnique({
             where: { id },
             include: {
                 amenities: {
@@ -79,7 +80,6 @@ export async function getHouseForEdit(id: number) {
                 },
             },
         });
-        return house;
     } catch (error) {
         console.error(`Error fetching house ${id} for edit:`, error);
         return null;
@@ -88,6 +88,13 @@ export async function getHouseForEdit(id: number) {
 
 // Создание дома с фото
 export async function createHouseWithPhotos(formData: FormData): Promise<HouseActionResponse> {
+    const session = await getServerSession(AUTH_OPTIONS);
+
+    // @ts-expect-error
+    if (!session?.user?.isAdmin) {
+        return { success: false, error: 'Доступ запрещен' };
+    }
+
     try {
         // Парсим данные
         const rawData = {
