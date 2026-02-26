@@ -1,14 +1,16 @@
 // components/SignInButton.tsx
 'use client';
 
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { LogIn, LogOut, User, Settings, LayoutDashboard } from 'lucide-react';
 
 export default function SignInButton() {
     const { data: session, status } = useSession();
     const [isOpen, setIsOpen] = useState(false);
+    const router = useRouter();
 
     if (status === 'loading') {
         return (
@@ -104,9 +106,10 @@ export default function SignInButton() {
         );
     }
 
+    // Не авторизован - ведём на страницу входа с выбором провайдера
     return (
         <button
-            onClick={() => signIn('yandex')}
+            onClick={() => router.push('/auth/sign-in')}
             className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-sm font-semibold"
         >
             <LogIn className="w-4 h-4" />
